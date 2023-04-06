@@ -11,31 +11,41 @@ const router = express.Router();
 router.get("/",
   async function (req, res) {
 
-    const results = await db.query( //TODO: order by something, e.g., name
+    const results = await db.query(
       `SELECT code, name
-      FROM companies`);
+      FROM companies
+      ORDER BY name`);
     const companies = results.rows;
     return res.json({ companies });
   });
 
 
 /** GET /[code] - return data about one company:
- * `{company: {code, name, description}}` */
+ * `{company: {code, name, description, invoices: [id, ...]}}` */
 
 router.get("/:code",
   async function (req, res) {
     const code = req.params.code;
 
-    const results = await db.query(
+    const cResults = await db.query(
       `SELECT code, name, description
       FROM companies
-      WHERE code = $1`, [code]);
+      WHERE code = $1`, [code]
+    );
+    const company = cResults.rows[0];
 
-    if (results.rows.length === 0) {
-      throw new NotFoundError("Invalid company code"); //include company code
+    if (!company) {
+      throw new NotFoundError(`Invalid company code: ${code}`);
     }
 
-    const company = results.rows[0]; //can move above 34
+    const iResults = await db.query(
+      `SELECT id, amt, paid, add_date, paid_date
+      FROM invoices
+      WHERE comp_code = $1`, [code]
+    );
+    const invoices = iResults.rows;
+
+    company.invoices = invoices;
 
     return res.json({ company });
   });
