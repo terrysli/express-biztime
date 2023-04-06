@@ -39,13 +39,12 @@ router.get("/:code",
     }
 
     const iResults = await db.query(
-      `SELECT id, amt, paid, add_date, paid_date
+      `SELECT id
       FROM invoices
-      WHERE comp_code = $1`, [code]
+      WHERE comp_code = $1
+      ORDER BY id`, [code]
     );
-    const invoices = iResults.rows;
-
-    company.invoices = invoices;
+    company.invoices = iResults.rows.map(i => i.id);
 
     return res.json({ company });
   });

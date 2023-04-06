@@ -6,7 +6,8 @@ const { NotFoundError, BadRequestError } = require("../expressError");
 
 const router = express.Router();
 
-/** GET / return {invoices: [{code, name}, ...]} */
+
+/** GET / return {invoices: [{id, comp_code}, ...]} */
 
 router.get("/",
   async function (req, res) {
@@ -14,19 +15,20 @@ router.get("/",
     const results = await db.query(
       `SELECT id, comp_code
       FROM invoices
-      ORDER BY comp_code`);
+      ORDER BY id`);
     const invoices = results.rows;
     return res.json({ invoices });
   });
 
 
-/** GET /[code] - return data about one invoice:
+/** GET /[id] - return data about one invoice:
  * `{invoice: {id, amt, paid, add_date, paid_date, company: {
  *                              code, name, description}}` */
 
 router.get("/:id",
   async function (req, res) {
-    const id = req.params.id;
+
+    const id = Number(req.params.id);
 
     const iResults = await db.query(
       `SELECT id, amt, paid, add_date, paid_date, comp_code
@@ -60,7 +62,9 @@ router.get("/:id",
 
 router.post("/",
   async function (req, res) {
+
     console.log("req body:", req.body);
+
     if (req.body === undefined || Object.keys(req.body).length === 0) {
       throw new BadRequestError("Required info missing");
     }
@@ -85,11 +89,13 @@ router.post("/",
 
 router.put("/:id",
   async function (req, res) {
+
+    const id = Number(req.params.id);
+
     if (req.body === undefined) {
       throw new BadRequestError("Insufficient data");
     }
     const { amt } = req.body;
-    const id = req.params.id;
 
     const results = await db.query(
       `UPDATE invoices
@@ -110,7 +116,8 @@ router.put("/:id",
 
 router.delete("/:id",
   async function (req, res) {
-    const id = req.params.id;
+
+    const id = Number(req.params.id);
 
     const results = await db.query(
       `DELETE FROM invoices
@@ -123,6 +130,8 @@ router.delete("/:id",
     if (!invoice) throw new NotFoundError(`No matching invoice: ${id}`);
     return res.json({ status: "deleted" });
   });
+
+
 
 
 module.exports = router;
