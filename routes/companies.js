@@ -46,20 +46,47 @@ async function (req, res) {
 router.post("/",
 async function (req, res) {
   console.log("req body:",req.body);
-  if (Object.keys(req.body).length === 0) {
+  if (req.body === undefined || Object.keys(req.body).length === 0) {
     throw new BadRequestError("Required info missing");
   }
   const { code, name, description } = req.body;
 
-  const result = await db.query(
+  const results = await db.query(
     `INSERT INTO companies (code, name, description)
       VALUES ($1, $2, $3)
       RETURNING code, name, description`,
     [code, name, description]
   );
-  const company = result.rows[0];
+  const company = results.rows[0];
 
   return res.status(201).json({ company });
 });
+
+
+/** PUT /[code] - update fields in company;
+ * return {company: {code, name, description}}
+ */
+
+router.put("/:code",
+async function (req, res) {
+  if (req.body === undefined || "code" in req.body) {
+    throw new BadRequestError("Not allowed");
+  }
+  const { name, description } = req.body;
+  const code = req.params.code;
+  const results = await db.query(
+    `UPDATE companies
+      SET name=$1,
+          description=$2
+      WHERE code=$3
+      RETURNING code, name, description`,
+    [name, description, code]
+  )
+  const company = results.rows[0];
+  if (!company) throw new NotFoundError(`No matching company: ${code}`);
+
+  return res.json({ company });
+});
+
 
 module.exports = router;
