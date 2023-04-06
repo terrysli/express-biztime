@@ -74,6 +74,7 @@ async function (req, res) {
   }
   const { name, description } = req.body;
   const code = req.params.code;
+
   const results = await db.query(
     `UPDATE companies
       SET name=$1,
@@ -81,11 +82,32 @@ async function (req, res) {
       WHERE code=$3
       RETURNING code, name, description`,
     [name, description, code]
-  )
+  );
+
   const company = results.rows[0];
   if (!company) throw new NotFoundError(`No matching company: ${code}`);
 
   return res.json({ company });
+});
+
+
+/** DELETE /[id] - delete company, return `{status: "deleted"}` */
+
+router.delete("/:code",
+async function (req, res, next) {
+  const code = req.params.code;
+  console.log("code",code);
+
+  const results = await db.query(
+    `DELETE FROM companies
+      WHERE code = $1
+      RETURNING code`,
+    [code]
+  );
+  const company = results.rows[0];
+
+  if (!company) throw new NotFoundError(`No matching company: ${code}`);
+  return res.json({status: "deleted" });
 });
 
 
