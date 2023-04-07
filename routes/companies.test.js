@@ -1,6 +1,6 @@
 "use strict";
 
-process.env.NODE_ENV = "test";
+console.log(process.env.NODE_ENV);
 
 const request = require("supertest");
 
@@ -20,22 +20,20 @@ beforeEach(async function () {
   testCo = result.rows[0];
 });
 
+afterAll(async function () {
+  await db.end();
+});
+
 
 /** GET / return {companies: [{code, name}, ...]} */
 
 describe("GET /companies", function () {
   test("Gets all companies", async function () {
-    debugger;
-    // let result = await db.query(
-    //   `SELECT code, name, description
-    //     FROM companies`
-    // );
-    // console.log("rows:",result.rows);
     const resp = await request(app).get("/companies");
     expect(resp.body).toEqual({
       companies: [{
         code: testCo.code,
-        name: testCo.name
+        name: testCo.name,
       }]
     });
   });
@@ -44,4 +42,24 @@ describe("GET /companies", function () {
 
 /** GET /[code] - return data about one company:
  * `{company: {code, name, description, invoices: [id, ...]}}` */
+
+describe("GET /[code]", function () {
+  test("Get a company", async function () {
+    const resp = await request(app).get(`/companies/${testCo.code}`);
+    expect(resp.body).toEqual({
+      company: {
+        code: testCo.code,
+        name: testCo.name,
+        description: testCo.description,
+        invoices: []
+      }
+    });
+  });
+
+  test("Get a non-existent company", async function () {
+    const resp = await request(app).get(`/companies/blah`);
+    expect(resp.status).toEqual(404);
+  })
+});
+
 
